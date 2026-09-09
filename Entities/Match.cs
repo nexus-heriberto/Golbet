@@ -1,0 +1,37 @@
+// Golbet/Entities/Match.cs
+
+using System.ComponentModel.DataAnnotations.Schema;
+using Golbet.Common;
+using Golbet.Enums;
+
+namespace Golbet.Entities;
+
+public class Match : AuditableEntity
+{
+    public DateTime Date { get; set; }
+
+    public MatchStatus Status { get; set; } = MatchStatus.Scheduled;
+
+    public int? HomeGoals { get; set; }
+
+    public int? AwayGoals { get; set; }
+
+    [Column(TypeName = "decimal(5,2)")]
+    public decimal HomeOdds { get; set; }
+
+    [Column(TypeName = "decimal(5,2)")]
+    public decimal DrawOdds { get; set; }
+
+    [Column(TypeName = "decimal(5,2)")]
+    public decimal AwayOdds { get; set; }
+
+    public int HomeTeamId { get; set; }
+
+    public Team HomeTeam { get; set; } = null!;
+
+    public int AwayTeamId { get; set; }
+
+    public Team AwayTeam { get; set; } = null!;
+
+    public ICollection<Bet> Bets { get; set; } = new List<Bet>();
+}
