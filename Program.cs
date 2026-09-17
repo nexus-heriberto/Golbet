@@ -2,7 +2,11 @@ using Golbet.Data;
 using Microsoft.EntityFrameworkCore;
 using Golbet.Implementations;
 using Golbet.Interfaces;
+using Golbet.Mapping;
+using Golbet.Services.Interfaces;
+using Golbet.Services.Implementations;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews();
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -17,6 +21,8 @@ builder.Services.AddScoped(
 
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddScoped<IMatchService, MatchService>();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -32,7 +38,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Matches}/{action=Index}/{id?}");
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"

@@ -11,7 +11,28 @@ public static class DbSeeder
         await context.Database.MigrateAsync();
 
         if (await context.Teams.AnyAsync())
+        {
+            var existingTeams = await context.Teams.ToListAsync();
+
+            foreach (var team in existingTeams)
+            {
+                team.CrestUrl = team.Name switch 
+                {
+                    "Atlético Nacional" => "/Images/Teams/nacional.png",
+                    "Independiente Medellín" => "/Images/Teams/medellin.png",
+                    "Millonarios" => "/Images/Teams/millonarios.png",
+                    "Independiente Santa Fe" => "/Images/Teams/santafe.png",
+                    "América de Cali" => "/Images/Teams/america.png",
+                    "Deportivo Cali" => "/Images/Teams/deportivocali.png",
+                    "Junior de Barranquilla" => "/Images/Teams/junior.png",
+                    "Once Caldas" => "/Images/Teams/oncecaldas.png",
+                    _ => team.CrestUrl
+                };
+            }
+
+            await context.SaveChangesAsync();
             return;
+        }
 
         var teams = new List<Team>
         {
@@ -19,49 +40,49 @@ public static class DbSeeder
             {
                 Name = "Atlético Nacional",
                 City = "Medellín",
-                CrestUrl = "https://placehold.co/80x80/006633/ffffff?text=NAC"
+                CrestUrl = "/Images/Teams/nacional.png"
             },
             new()
             {
                 Name = "Independiente Medellín",
                 City = "Medellín",
-                CrestUrl = "https://placehold.co/80x80/cc0000/ffffff?text=DIM"
+                CrestUrl = "/Images/Teams/medellin.png"
             },
             new()
             {
                 Name = "Millonarios",
                 City = "Bogotá",
-                CrestUrl = "https://placehold.co/80x80/003399/ffffff?text=MIL"
+                CrestUrl = "/Images/Teams/millonarios.png"
             },
             new()
             {
                 Name = "Independiente Santa Fe",
                 City = "Bogotá",
-                CrestUrl = "https://placehold.co/80x80/cc0000/ffffff?text=SFE"
+                CrestUrl = "/Images/Teams/santafe.png"
             },
             new()
             {
                 Name = "América de Cali",
                 City = "Cali",
-                CrestUrl = "https://placehold.co/80x80/e60000/ffffff?text=AME"
+                CrestUrl = "/Images/Teams/america.png"
             },
             new()
             {
                 Name = "Deportivo Cali",
                 City = "Cali",
-                CrestUrl = "https://placehold.co/80x80/00794d/ffffff?text=CAL"
+                CrestUrl = "/Images/Teams/deportivocali.png"
             },
             new()
             {
                 Name = "Junior de Barranquilla",
                 City = "Barranquilla",
-                CrestUrl = "https://placehold.co/80x80/d40026/ffffff?text=JUN"
+                CrestUrl = "/Images/Teams/junior.png"
             },
             new()
             {
                 Name = "Once Caldas",
                 City = "Manizales",
-                CrestUrl = "https://placehold.co/80x80/ffffff/000000?text=ONC"
+                CrestUrl = "/Images/Teams/oncecaldas.png"
             }
         };
 
