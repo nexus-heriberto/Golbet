@@ -1,0 +1,31 @@
+﻿@model Golbet.DTOs.TeamFormDto
+
+@{
+    ViewData["Title"] = "Editar equipo";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+        <h1>Editar equipo</h1>
+        <p class="text-muted">
+            Modifique la información del equipo.
+        </p>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <form asp-action="Edit" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <partial name="_TeamForm" model="Model" />
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+

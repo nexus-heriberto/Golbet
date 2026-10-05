@@ -1,6 +1,5 @@
-```cshtml
 @using Golbet.Enums
-@using Golbet.Helpers
+@using Golbet.Services.Helpers
 @model IEnumerable<Golbet.DTOs.MatchDto>
 
 @{
@@ -34,6 +33,35 @@
         .header p {
             color: #666;
         }
+
+    .admin-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+
+    .admin-button {
+        display: inline-block;
+        padding: 9px 16px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .admin-button-primary {
+        background: #0d6efd;
+        color: white;
+        border: 1px solid #0d6efd;
+    }
+
+    .admin-button-secondary {
+        background: white;
+        color: #0d6efd;
+        border: 1px solid #0d6efd;
+    }
 
     .filters {
         display: flex;
@@ -166,16 +194,95 @@
         .detail-button:hover {
             background: #146c43;
         }
+
+    .match-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .action-button {
+        flex: 1;
+        min-width: 90px;
+        box-sizing: border-box;
+        padding: 9px 10px;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .action-view {
+        background: white;
+        color: #198754;
+        border: 1px solid #198754;
+    }
+
+    .action-edit {
+        background: white;
+        color: #0d6efd;
+        border: 1px solid #0d6efd;
+    }
+
+    .action-delete {
+        background: white;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+    }
+
+    .success-message {
+        max-width: 800px;
+        margin: 0 auto 25px auto;
+        padding: 12px 16px;
+        background: #d1e7dd;
+        color: #0f5132;
+        border: 1px solid #badbcc;
+        border-radius: 5px;
+        text-align: center;
+    }
 </style>
 
 <div class="container">
 
     <div class="header">
+
         <h1>Cartelera de Partidos</h1>
-        <p>Partidos y cuotas de GolBet</p>
+
+        <p>
+            Partidos y cuotas de GolBet
+        </p>
+
+    </div>
+
+    @if (TempData["Success"] is not null)
+    {
+        <div class="success-message">
+            @TempData["Success"]
+        </div>
+    }
+
+    <!-- Administración -->
+
+    <div class="admin-actions">
+
+        <a asp-action="Create"
+           class="admin-button admin-button-primary">
+            Nuevo partido
+        </a>
+
+        <a asp-controller="Teams"
+           asp-action="Index"
+           class="admin-button admin-button-secondary">
+            Administrar equipos
+        </a>
+
     </div>
 
     <!-- Filtros -->
+
     <div class="filters">
 
         <a asp-action="Index"
@@ -204,6 +311,7 @@
     </div>
 
     <!-- Partidos -->
+
     <div class="matches">
 
         @foreach (var match in Model)
@@ -219,18 +327,27 @@
             <div class="match-card">
 
                 <!-- Estado -->
+
                 <div class="status">
+
                     <span>
                         @statusText
                     </span>
+
                 </div>
 
                 <!-- Fecha -->
+
                 <div class="date">
-                    @match.Date.ToColombiaTime().ToString("dd/MM/yyyy HH:mm")
+
+                    @match.Date
+                    .ToColombiaTime()
+                    .ToString("dd/MM/yyyy HH:mm")
+
                 </div>
 
                 <!-- Equipos -->
+
                 <div class="teams">
 
                     <div class="team">
@@ -277,6 +394,7 @@
                 <hr class="separator" />
 
                 <!-- Cuotas -->
+
                 <div class="odds-title">
                     Cuotas
                 </div>
@@ -284,34 +402,81 @@
                 <div class="odds">
 
                     <div>
-                        <div class="odds-label">1</div>
+
+                        <div class="odds-label">
+                            1
+                        </div>
+
                         <div class="odds-value">
                             @match.HomeOdds.ToString("0.00")
                         </div>
+
                     </div>
 
                     <div>
-                        <div class="odds-label">X</div>
+
+                        <div class="odds-label">
+                            X
+                        </div>
+
                         <div class="odds-value">
                             @match.DrawOdds.ToString("0.00")
                         </div>
+
                     </div>
 
                     <div>
-                        <div class="odds-label">2</div>
+
+                        <div class="odds-label">
+                            2
+                        </div>
+
                         <div class="odds-value">
                             @match.AwayOdds.ToString("0.00")
                         </div>
+
                     </div>
 
                 </div>
 
                 <!-- Ver detalle -->
+
                 <a asp-action="Detail"
                    asp-route-id="@match.Id"
                    class="detail-button">
                     Ver detalle
                 </a>
+
+                <!-- Acciones administrativas -->
+
+                <div class="match-actions">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@match.Id"
+                       class="action-button action-edit">
+                        Editar
+                    </a>
+
+                    <form asp-action="Deactivate"
+                          method="post"
+                          style="flex:1;">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="id"
+                               value="@match.Id" />
+
+                        <button type="submit"
+                                class="action-button action-delete"
+                                style="width:100%;"
+                                onclick="return confirm('¿Está seguro de desactivar este partido?');">
+                            Desactivar
+                        </button>
+
+                    </form>
+
+                </div>
 
             </div>
         }
@@ -319,4 +484,4 @@
     </div>
 
 </div>
-```
+

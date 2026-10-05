@@ -5,6 +5,11 @@ using Golbet.Interfaces;
 using Golbet.Mapping;
 using Golbet.Services.Interfaces;
 using Golbet.Services.Implementations;
+using System.Globalization;
+var culture = new CultureInfo("es-CO");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
@@ -23,6 +28,8 @@ builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

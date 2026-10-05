@@ -1,13 +1,17 @@
-namespace Golbet.Helpers;
+namespace Golbet.Services.Helpers;
 
 public static class DateTimeExtensions
 {
-    public static DateTime ToColombiaTime(this DateTime utcDateTime)
-    {
-        var colombiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Bogota");
+    private static readonly TimeZoneInfo ColombiaZone =
+        TimeZoneInfo.FindSystemTimeZoneById("America/Bogota");
 
-        return TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc),
-            colombiaTimeZone);
-    }
+    public static DateTime ToColombiaTime(this DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+            ColombiaZone);
+
+    public static DateTime ToUtcFromColombia(this DateTime colombiaLocal) =>
+        TimeZoneInfo.ConvertTimeToUtc(
+            DateTime.SpecifyKind(colombiaLocal, DateTimeKind.Unspecified),
+            ColombiaZone);
 }
