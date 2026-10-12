@@ -1,0 +1,173 @@
+﻿
+@using Microsoft.AspNetCore.Identity
+@using Golbet.Entities
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GolBet</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+            body {
+                margin: 0;
+                background: #f4f7fb;
+                color: #1f2937;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            .golbet-navbar {
+                background: #102b46;
+                padding: 14px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 18px;
+                flex-wrap: wrap;
+            }
+
+            .golbet-brand {
+                color: #ffffff;
+                text-decoration: none;
+                font-size: 25px;
+                font-weight: bold;
+            }
+
+                .golbet-brand:hover {
+                    color: #bfe5ff;
+                }
+
+            .golbet-links {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+                .golbet-links a,
+                .golbet-links button {
+                    color: #ffffff;
+                    text-decoration: none;
+                    background: transparent;
+                    border: 1px solid rgba(255,255,255,.35);
+                    border-radius: 6px;
+                    padding: 8px 12px;
+                    font-size: 14px;
+                    cursor: pointer;
+                }
+
+                    .golbet-links a:hover,
+                    .golbet-links button:hover {
+                        background: #244967;
+                    }
+
+            .golbet-user {
+                color: #dbeafe;
+                font-size: 14px;
+            }
+
+            .golbet-content {
+                max-width: 1200px;
+                margin: 28px auto;
+                padding: 0 20px;
+                min-height: 65vh;
+            }
+
+            .golbet-footer {
+                text-align: center;
+                color: #64748b;
+                padding: 20px;
+                font-size: 13px;
+            }
+
+            .golbet-message {
+                padding: 12px 16px;
+                margin-bottom: 18px;
+                border-radius: 6px;
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            @@media (max-width: 600px) {
+                .golbet-navbar {
+                    padding: 14px;
+                }
+
+                .golbet-content {
+                    margin-top: 18px;
+                    padding: 0 12px;
+                }
+            }
+    </style>
+</head>
+<body>
+    <header class="golbet-navbar">
+        <a class="golbet-brand"
+           asp-controller="Matches"
+           asp-action="Index">⚽ GolBet</a>
+
+        <nav class="golbet-links">
+            <a asp-controller="Matches" asp-action="Index">Cartelera</a>
+
+            @if (SignInManager.IsSignedIn(User))
+            {
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Matches" asp-action="Create">
+                        Nuevo partido
+                    </a>
+
+                    <a asp-controller="Teams" asp-action="Index">
+                        Administrar equipos
+                    </a>
+                }
+
+                <span class="golbet-user">
+                    Hola, @(User.Identity?.Name ?? "Usuario")
+                </span>
+
+                <form asp-controller="Account"
+                      asp-action="Logout"
+                      method="post"
+                      style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit">Cerrar sesión</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login">
+                    Iniciar sesión
+                </a>
+
+                <a asp-controller="Account" asp-action="Register">
+                    Registrarse
+                </a>
+            }
+        </nav>
+    </header>
+
+    <main class="golbet-content">
+        @if (TempData["Success"] is string successMessage)
+        {
+            <div class="golbet-message" role="status">
+                @successMessage
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <footer class="golbet-footer">
+        GolBet · Simulador de apuestas de fútbol · @DateTime.Now.Year
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

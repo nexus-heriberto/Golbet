@@ -1,0 +1,37 @@
+﻿
+@{
+    ViewData["Title"] = "Acceso denegado";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 text-center">
+
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+
+                    <h1 class="text-danger mb-3">
+                        Acceso denegado
+                    </h1>
+
+                    <p class="lead">
+                    </p>
+
+                    <p class="text-muted">
+                        Si necesitas ingresar, contacta al administrador
+                        de GolBet.
+                    </p>
+
+                    <a asp-controller="Matches"
+                       asp-action="Index"
+                       class="btn btn-primary mt-3">
+                        Volver a los partidos
+                    </a>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+

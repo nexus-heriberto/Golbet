@@ -1,5 +1,7 @@
-﻿using Golbet.DTOs;
+﻿
+using Golbet.DTOs;
 using Golbet.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Golbet.Controllers;
@@ -14,6 +16,8 @@ public class TeamsController : Controller
     }
 
     // GET: /Teams
+    // La consulta de equipos está disponible para todos.
+    [AllowAnonymous]
     public async Task<IActionResult> Index()
     {
         var teams = await _teamService.GetAllAsync();
@@ -23,6 +27,7 @@ public class TeamsController : Controller
 
     // GET: /Teams/Create
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public IActionResult Create()
     {
         return View(new TeamFormDto());
@@ -30,6 +35,7 @@ public class TeamsController : Controller
 
     // POST: /Teams/Create
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(TeamFormDto dto)
     {
@@ -47,6 +53,7 @@ public class TeamsController : Controller
 
     // GET: /Teams/Edit/5
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Edit(int id)
     {
         var dto = await _teamService.GetForEditAsync(id);
@@ -61,6 +68,7 @@ public class TeamsController : Controller
 
     // POST: /Teams/Edit
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(TeamFormDto dto)
     {
@@ -85,6 +93,7 @@ public class TeamsController : Controller
 
     // POST: /Teams/Deactivate
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deactivate(int id)
     {
@@ -95,5 +104,6 @@ public class TeamsController : Controller
         return RedirectToAction(nameof(Index));
     }
 }
+
 
 

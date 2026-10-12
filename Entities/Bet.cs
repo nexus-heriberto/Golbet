@@ -1,4 +1,3 @@
-// Golbet/Entities/Bet.cs
 
 using System.ComponentModel.DataAnnotations.Schema;
 using Golbet.Common;
@@ -21,4 +20,9 @@ public class Bet : AuditableEntity
     public int MatchId { get; set; }
 
     public Match Match { get; set; } = null!;
+
+    // Identity user who placed the bet.
+    public string UserId { get; set; } = null!;
+
+    public AppUser User { get; set; } = null!;
 }

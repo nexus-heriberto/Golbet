@@ -1,22 +1,89 @@
+
 using Golbet.Entities;
 using Golbet.Enums;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Golbet.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(AppDbContext context)
+    public const string AdminRole = "Admin";
+    public const string ApostadorRole = "Apostador";
+
+    public static async Task SeedAsync(
+        AppDbContext context,
+        RoleManager<IdentityRole> roleManager,
+        UserManager<AppUser> userManager)
     {
         await context.Database.MigrateAsync();
 
+        // Create roles if they do not exist.
+        foreach (var roleName in new[] { AdminRole, ApostadorRole })
+        {
+            if (!await roleManager.RoleExistsAsync(roleName))
+            {
+                var roleResult =
+                    await roleManager.CreateAsync(new IdentityRole(roleName));
+
+                if (!roleResult.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        $"No se pudo crear el rol {roleName}: " +
+                        string.Join("; ", roleResult.Errors.Select(e => e.Description)));
+                }
+            }
+        }
+
+        // Create the initial administrator if necessary.
+        const string adminEmail = "admin@golbet.com";
+        const string adminPassword = "Admin123*";
+
+        var admin = await userManager.FindByEmailAsync(adminEmail);
+
+        if (admin is null)
+        {
+            admin = new AppUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                FullName = "Administrador GolBet",
+                Balance = 0m
+            };
+
+            var userResult =
+                await userManager.CreateAsync(admin, adminPassword);
+
+            if (!userResult.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    "No se pudo crear el administrador: " +
+                    string.Join("; ", userResult.Errors.Select(e => e.Description)));
+            }
+        }
+
+        if (!await userManager.IsInRoleAsync(admin, AdminRole))
+        {
+            var roleResult =
+                await userManager.AddToRoleAsync(admin, AdminRole);
+
+            if (!roleResult.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    "No se pudo asignar el rol Admin: " +
+                    string.Join("; ", roleResult.Errors.Select(e => e.Description)));
+            }
+        }
+
+        // Preserve existing teams and update their crest paths.
         if (await context.Teams.AnyAsync())
         {
             var existingTeams = await context.Teams.ToListAsync();
 
             foreach (var team in existingTeams)
             {
-                team.CrestUrl = team.Name switch 
+                team.CrestUrl = team.Name switch
                 {
                     "Atlético Nacional" => "/Images/Teams/nacional.png",
                     "Independiente Medellín" => "/Images/Teams/medellin.png",

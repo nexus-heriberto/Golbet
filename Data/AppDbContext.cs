@@ -1,12 +1,12 @@
-// Golbet/Data/AppDbContext.cs
 
 using Golbet.Common;
 using Golbet.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Golbet.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<AppUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -23,8 +23,7 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Team names must be unique,
-        // case-insensitive and accent-insensitive.
+        // Team names: unique, case-insensitive and accent-insensitive.
         modelBuilder.Entity<Team>()
             .Property(t => t.Name)
             .UseCollation("SQL_Latin1_General_CP1_CI_AI");
@@ -53,6 +52,23 @@ public class AppDbContext : DbContext
             .WithMany(m => m.Bets)
             .HasForeignKey(b => b.MatchId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Bet -> User
+        modelBuilder.Entity<Bet>()
+            .HasOne(b => b.User)
+            .WithMany(u => u.Bets)
+            .HasForeignKey(b => b.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Prevent duplicate picks for the same match and user.
+        modelBuilder.Entity<Bet>()
+            .HasIndex(b => new { b.MatchId, b.UserId, b.Pick })
+            .IsUnique();
+
+        // User balance precision.
+        modelBuilder.Entity<AppUser>()
+            .Property(u => u.Balance)
+            .HasColumnType("decimal(12,2)");
     }
 
     public override async Task<int> SaveChangesAsync(
@@ -70,8 +86,6 @@ public class AppDbContext : DbContext
 
                 case EntityState.Modified:
                     entry.Entity.ModifiedDate = utcNow;
-
-                    // CreatedDate must never change.
                     entry.Property(e => e.CreatedDate).IsModified = false;
                     break;
             }

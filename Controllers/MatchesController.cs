@@ -1,6 +1,8 @@
+
 using Golbet.DTOs;
 using Golbet.Enums;
 using Golbet.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Golbet.Controllers;
@@ -19,6 +21,8 @@ public class MatchesController : Controller
     }
 
     // GET: /Matches
+    // La cartelera permanece disponible para todos.
+    [AllowAnonymous]
     public async Task<IActionResult> Index(MatchStatus? status)
     {
         ViewBag.CurrentStatus = status;
@@ -29,6 +33,8 @@ public class MatchesController : Controller
     }
 
     // GET: /Matches/Detail/5
+    // El detalle del partido permanece disponible para todos.
+    [AllowAnonymous]
     public async Task<IActionResult> Detail(int id)
     {
         var match = await _matchService.GetDetailAsync(id);
@@ -41,6 +47,7 @@ public class MatchesController : Controller
 
     // GET: /Matches/Create
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create()
     {
         await LoadTeamsAsync();
@@ -50,6 +57,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Create
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MatchFormDto dto)
     {
@@ -79,6 +87,7 @@ public class MatchesController : Controller
 
     // GET: /Matches/Edit/5
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Edit(int id)
     {
         var dto = await _matchService.GetForEditAsync(id);
@@ -93,6 +102,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Edit
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(MatchFormDto dto)
     {
@@ -126,6 +136,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Deactivate
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deactivate(int id)
     {
@@ -146,4 +157,5 @@ public class MatchesController : Controller
             .ToList();
     }
 }
+
 
