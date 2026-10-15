@@ -22,16 +22,23 @@ public class MatchService : IMatchService
     }
 
     public async Task<IEnumerable<MatchDto>> GetBoardAsync(
-        MatchStatus? status = null)
+        MatchStatus? status = null,
+        string? search = null)
     {
-        var matches = await _matchRepository.GetAllWithTeamsAsync(status);
+        var matches = await _matchRepository
+            .GetAllWithTeamsAsync(status, search);
+
         return _mapper.Map<IEnumerable<MatchDto>>(matches);
     }
 
     public async Task<MatchDetailDto?> GetDetailAsync(int id)
     {
-        var match = await _matchRepository.GetByIdWithDetailsAsync(id);
-        return match is null ? null : _mapper.Map<MatchDetailDto>(match);
+        var match = await _matchRepository
+            .GetByIdWithDetailsAsync(id);
+
+        return match is null
+            ? null
+            : _mapper.Map<MatchDetailDto>(match);
     }
 
     public async Task<MatchFormDto?> GetForEditAsync(int id)
@@ -39,7 +46,9 @@ public class MatchService : IMatchService
         var match = await _matchRepository.GetByIdAsync(id);
 
         if (match is null)
+        {
             return null;
+        }
 
         var dto = _mapper.Map<MatchFormDto>(match);
         dto.Date = dto.Date.ToColombiaTime();

@@ -1,3 +1,4 @@
+
 @using Golbet.Enums
 @using Golbet.Services.Helpers
 @model IEnumerable<Golbet.DTOs.MatchDto>
@@ -5,7 +6,9 @@
 @{
     ViewData["Title"] = "Cartelera de Partidos";
     var current = (MatchStatus?)ViewBag.CurrentStatus;
+    var currentSearch = ViewBag.CurrentSearch as string ?? "";
     var isAdmin = User.IsInRole("Admin");
+    var hasMatches = Model.Any();
 }
 
 <style>
@@ -27,13 +30,13 @@
         margin-bottom: 30px;
     }
 
-        .header h1 {
-            margin-bottom: 8px;
-        }
+    .header h1 {
+        margin-bottom: 8px;
+    }
 
-        .header p {
-            color: #666;
-        }
+    .header p {
+        color: #666;
+    }
 
     .admin-actions {
         display: flex;
@@ -64,6 +67,59 @@
         border: 1px solid #0d6efd;
     }
 
+    .search-panel {
+        background: white;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .search-label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .search-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .search-input {
+        flex: 1;
+        min-width: 200px;
+        padding: 11px 12px;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+        font-size: 15px;
+        box-sizing: border-box;
+    }
+
+    .search-button,
+    .clear-button {
+        display: inline-block;
+        padding: 11px 18px;
+        border-radius: 5px;
+        font-size: 14px;
+        font-weight: bold;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .search-button {
+        background: #198754;
+        color: white;
+        border: 1px solid #198754;
+    }
+
+    .clear-button {
+        background: white;
+        color: #555;
+        border: 1px solid #bbb;
+    }
+
     .filters {
         display: flex;
         gap: 10px;
@@ -82,10 +138,10 @@
         font-size: 14px;
     }
 
-        .filter-button.active {
-            background: #198754;
-            color: white;
-        }
+    .filter-button.active {
+        background: #198754;
+        color: white;
+    }
 
     .matches {
         display: grid;
@@ -106,14 +162,14 @@
         margin-bottom: 15px;
     }
 
-        .status span {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
-            background: #0d6efd;
-            color: white;
-            font-size: 13px;
-        }
+    .status span {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 15px;
+        background: #0d6efd;
+        color: white;
+        font-size: 13px;
+    }
 
     .date {
         text-align: center;
@@ -192,9 +248,9 @@
         cursor: pointer;
     }
 
-        .detail-button:hover {
-            background: #146c43;
-        }
+    .detail-button:hover {
+        background: #146c43;
+    }
 
     .match-actions {
         display: flex;
@@ -214,12 +270,6 @@
         font-size: 13px;
         font-weight: bold;
         cursor: pointer;
-    }
-
-    .action-view {
-        background: white;
-        color: #198754;
-        border: 1px solid #198754;
     }
 
     .action-edit {
@@ -244,6 +294,20 @@
         border-radius: 5px;
         text-align: center;
     }
+
+    .empty-message {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 35px 20px;
+        text-align: center;
+        color: #555;
+    }
+
+    .empty-message h2 {
+        margin-top: 0;
+        color: #222;
+    }
 </style>
 
 <div class="container">
@@ -265,7 +329,6 @@
     @if (isAdmin)
     {
         <div class="admin-actions">
-
             <a asp-controller="Matches"
                asp-action="Create"
                class="admin-button admin-button-primary">
@@ -277,16 +340,56 @@
                class="admin-button admin-button-secondary">
                 Administrar equipos
             </a>
-
         </div>
     }
 
-    @* Filtros de partidos: disponibles para todos *@
+    @* Buscador: envía los criterios mediante GET *@
+
+    <div class="search-panel">
+        <form asp-controller="Matches"
+              asp-action="Index"
+              method="get">
+
+            <label for="search" class="search-label">
+                Buscar partidos por equipo
+            </label>
+
+            <div class="search-row">
+                <input type="search"
+                       id="search"
+                       name="search"
+                       value="@currentSearch"
+                       class="search-input"
+                       placeholder="Ejemplo: Nacional, Medellín..."
+                       maxlength="100" />
+
+                @if (current.HasValue)
+                {
+                    <input type="hidden"
+                           name="status"
+                           value="@current.Value" />
+                }
+
+                <button type="submit" class="search-button">
+                    Buscar
+                </button>
+
+                <a asp-controller="Matches"
+                   asp-action="Index"
+                   class="clear-button">
+                    Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    @* Filtros de partidos: conservan la búsqueda actual *@
 
     <div class="filters">
 
         <a asp-controller="Matches"
            asp-action="Index"
+           asp-route-search="@currentSearch"
            class="filter-button @(current is null ? "active" : "")">
             Todos
         </a>
@@ -294,6 +397,7 @@
         <a asp-controller="Matches"
            asp-action="Index"
            asp-route-status="@MatchStatus.Scheduled"
+           asp-route-search="@currentSearch"
            class="filter-button @(current == MatchStatus.Scheduled ? "active" : "")">
             Programados
         </a>
@@ -301,6 +405,7 @@
         <a asp-controller="Matches"
            asp-action="Index"
            asp-route-status="@MatchStatus.InProgress"
+           asp-route-search="@currentSearch"
            class="filter-button @(current == MatchStatus.InProgress ? "active" : "")">
             En juego
         </a>
@@ -308,146 +413,181 @@
         <a asp-controller="Matches"
            asp-action="Index"
            asp-route-status="@MatchStatus.Finished"
+           asp-route-search="@currentSearch"
            class="filter-button @(current == MatchStatus.Finished ? "active" : "")">
             Finalizados
         </a>
 
     </div>
 
-    @* Tarjetas de partidos *@
+    @* Resultados de la búsqueda *@
 
-    <div class="matches">
+    @if (hasMatches)
+    {
+        <div class="matches">
 
-        @foreach (var match in Model)
-        {
-            var statusText = match.Status switch
+            @foreach (var match in Model)
             {
-                MatchStatus.Scheduled => "Programado",
-                MatchStatus.InProgress => "En juego",
-                MatchStatus.Finished => "Finalizado",
-                _ => match.Status.ToString()
-            };
-
-            <div class="match-card">
-
-                <div class="status">
-                    <span>@statusText</span>
-                </div>
-
-                <div class="date">
-                    @match.Date.ToColombiaTime().ToString("dd/MM/yyyy HH:mm")
-                </div>
-
-                <div class="teams">
-
-                    <div class="team">
-                        <img src="@(match.HomeTeamCrestUrl ?? "/images/crest-placeholder.png")"
-                             alt="Escudo de @match.HomeTeamName" />
-
-                        <div class="team-name">
-                            @match.HomeTeamName
-                        </div>
-                    </div>
-
-                    <div>
-                        @if (match.Status == MatchStatus.Finished)
-                        {
-                            <div class="score">
-                                @match.HomeGoals - @match.AwayGoals
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="vs">VS</div>
-                        }
-                    </div>
-
-                    <div class="team">
-                        <img src="@(match.AwayTeamCrestUrl ?? "/images/crest-placeholder.png")"
-                             alt="Escudo de @match.AwayTeamName" />
-
-                        <div class="team-name">
-                            @match.AwayTeamName
-                        </div>
-                    </div>
-
-                </div>
-
-                <hr class="separator" />
-
-                <div class="odds-title">Cuotas</div>
-
-                <div class="odds">
-
-                    <div>
-                        <div class="odds-label">1</div>
-                        <div class="odds-value">
-                            @match.HomeOdds.ToString("0.00")
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="odds-label">X</div>
-                        <div class="odds-value">
-                            @match.DrawOdds.ToString("0.00")
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="odds-label">2</div>
-                        <div class="odds-value">
-                            @match.AwayOdds.ToString("0.00")
-                        </div>
-                    </div>
-
-                </div>
-
-                <a asp-controller="Matches"
-                   asp-action="Detail"
-                   asp-route-id="@match.Id"
-                   class="detail-button">
-                    Ver detalle
-                </a>
-
-                @* Editar y desactivar: solo para Admin *@
-
-                @if (isAdmin)
+                var statusText = match.Status switch
                 {
-                    <div class="match-actions">
+                    MatchStatus.Scheduled => "Programado",
+                    MatchStatus.InProgress => "En juego",
+                    MatchStatus.Finished => "Finalizado",
+                    _ => match.Status.ToString()
+                };
 
-                        <a asp-controller="Matches"
-                           asp-action="Edit"
-                           asp-route-id="@match.Id"
-                           class="action-button action-edit">
-                            Editar
-                        </a>
+                <div class="match-card">
 
-                        <form asp-controller="Matches"
-                              asp-action="Deactivate"
-                              method="post"
-                              style="flex:1;">
+                    <div class="status">
+                        <span>@statusText</span>
+                    </div>
 
-                            @Html.AntiForgeryToken()
+                    <div class="date">
+                        @match.Date.ToColombiaTime().ToString("dd/MM/yyyy HH:mm")
+                    </div>
 
-                            <input type="hidden"
-                                   name="id"
-                                   value="@match.Id" />
+                    <div class="teams">
 
-                            <button type="submit"
-                                    class="action-button action-delete"
-                                    style="width:100%;"
-                                    onclick="return confirm('¿Está seguro de desactivar este partido?');">
-                                Desactivar
-                            </button>
+                        <div class="team">
+                            <img src="@(match.HomeTeamCrestUrl ?? "/images/crest-placeholder.png")"
+                                 alt="Escudo de @match.HomeTeamName" />
 
-                        </form>
+                            <div class="team-name">
+                                @match.HomeTeamName
+                            </div>
+                        </div>
+
+                        <div>
+                            @if (match.Status == MatchStatus.Finished)
+                            {
+                                <div class="score">
+                                    @match.HomeGoals - @match.AwayGoals
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="vs">VS</div>
+                            }
+                        </div>
+
+                        <div class="team">
+                            <img src="@(match.AwayTeamCrestUrl ?? "/images/crest-placeholder.png")"
+                                 alt="Escudo de @match.AwayTeamName" />
+
+                            <div class="team-name">
+                                @match.AwayTeamName
+                            </div>
+                        </div>
 
                     </div>
-                }
 
-            </div>
-        }
+                    <hr class="separator" />
 
-    </div>
+                    <div class="odds-title">Cuotas</div>
+
+                    <div class="odds">
+                        <div>
+                            <div class="odds-label">1</div>
+                            <div class="odds-value">
+                                @match.HomeOdds.ToString("0.00")
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="odds-label">X</div>
+                            <div class="odds-value">
+                                @match.DrawOdds.ToString("0.00")
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="odds-label">2</div>
+                            <div class="odds-value">
+                                @match.AwayOdds.ToString("0.00")
+                            </div>
+                        </div>
+                    </div>
+
+                    <a asp-controller="Matches"
+                       asp-action="Detail"
+                       asp-route-id="@match.Id"
+                       class="detail-button">
+                        Ver detalle
+                    </a>
+
+                    @* Editar y desactivar: solo para Admin *@
+
+                    @if (isAdmin)
+                    {
+                        <div class="match-actions">
+
+                            <a asp-controller="Matches"
+                               asp-action="Edit"
+                               asp-route-id="@match.Id"
+                               class="action-button action-edit">
+                                Editar
+                            </a>
+
+                            <form asp-controller="Matches"
+                                  asp-action="Deactivate"
+                                  method="post"
+                                  style="flex:1;">
+
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden"
+                                       name="id"
+                                       value="@match.Id" />
+
+                                <button type="submit"
+                                        class="action-button action-delete"
+                                        style="width:100%;"
+                                        onclick="return confirm('¿Está seguro de desactivar este partido?');">
+                                    Desactivar
+                                </button>
+
+                            </form>
+
+                        </div>
+                    }
+
+                </div>
+            }
+
+        </div>
+    }
+    else
+    {
+        <div class="empty-message">
+            @if (!string.IsNullOrWhiteSpace(currentSearch))
+            {
+                <h2>No se encontraron partidos</h2>
+                <p>
+                    No hay partidos cuyos equipos coincidan con
+                    <strong>@currentSearch</strong>
+                    @if (current.HasValue)
+                    {
+                        <span>con el estado seleccionado.</span>
+                    }
+                    else
+                    {
+                        <span>.</span>
+                    }
+                </p>
+            }
+            else
+            {
+                <h2>No hay partidos disponibles</h2>
+                <p>No existen partidos para el filtro seleccionado.</p>
+            }
+
+            <a asp-controller="Matches"
+               asp-action="Index"
+               class="detail-button">
+                Volver a la cartelera
+            </a>
+        </div>
+    }
 
 </div>
+

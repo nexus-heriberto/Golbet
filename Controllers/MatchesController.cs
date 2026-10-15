@@ -1,4 +1,3 @@
-
 using Golbet.DTOs;
 using Golbet.Enums;
 using Golbet.Services.Interfaces;
@@ -21,19 +20,21 @@ public class MatchesController : Controller
     }
 
     // GET: /Matches
-    // La cartelera permanece disponible para todos.
+    // La cartelera permite buscar equipos y filtrar por estado.
     [AllowAnonymous]
-    public async Task<IActionResult> Index(MatchStatus? status)
+    public async Task<IActionResult> Index(
+        MatchStatus? status,
+        string? search)
     {
         ViewBag.CurrentStatus = status;
+        ViewBag.CurrentSearch = search;
 
-        var board = await _matchService.GetBoardAsync(status);
+        var board = await _matchService.GetBoardAsync(status, search);
 
         return View(board);
     }
 
     // GET: /Matches/Detail/5
-    // El detalle del partido permanece disponible para todos.
     [AllowAnonymous]
     public async Task<IActionResult> Detail(int id)
     {
@@ -157,5 +158,6 @@ public class MatchesController : Controller
             .ToList();
     }
 }
+
 
 
