@@ -50,14 +50,20 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-// Existing GolBet services
+// Generic repository
 builder.Services.AddScoped(
     typeof(IGenericRepository<>),
     typeof(GenericRepository<>));
 
+// Match repository
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+// AutoMapper 15
+builder.Services.AddAutoMapper(
+    cfg => { },
+    typeof(MappingProfile).Assembly);
+
+// Application services
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 
@@ -125,5 +131,6 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
+
 
 
