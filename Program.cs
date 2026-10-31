@@ -58,6 +58,9 @@ builder.Services.AddScoped(
 // Match repository
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 
+// Bet repository
+builder.Services.AddScoped<IBetRepository, BetRepository>();
+
 // AutoMapper 15
 builder.Services.AddAutoMapper(
     cfg => { },
@@ -66,6 +69,7 @@ builder.Services.AddAutoMapper(
 // Application services
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IBetService, BetService>();
 
 var app = builder.Build();
 

@@ -29,6 +29,18 @@ public class MappingProfile : Profile
 
         CreateMap<MatchFormDto, Match>()
             .ReverseMap();
+
+        // Bet mapping
+        CreateMap<Bet, BetDto>()
+            .ForMember(dest => dest.HomeTeamName,
+                opt => opt.MapFrom(src => src.Match.HomeTeam.Name))
+            .ForMember(dest => dest.AwayTeamName,
+                opt => opt.MapFrom(src => src.Match.AwayTeam.Name))
+            .ForMember(dest => dest.MatchDate,
+                opt => opt.MapFrom(src => src.Match.Date))
+            .ForMember(dest => dest.PotentialPayout,
+                opt => opt.MapFrom(src =>
+                    src.Amount * src.OddsAtPlacement));
     }
 }
 

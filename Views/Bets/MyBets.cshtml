@@ -1,0 +1,135 @@
+﻿@using Golbet.Enums
+@using Golbet.Services.Helpers
+@model IEnumerable<Golbet.DTOs.BetDto>
+
+@{
+    ViewData["Title"] = "Mis Apuestas";
+}
+
+<div class="container py-4">
+
+    <!-- Encabezado -->
+    <div class="text-center mb-4">
+        <h1 class="display-5 fw-bold">Mis Apuestas</h1>
+        <p class="text-muted">
+            Consulta tu historial de apuestas y tus posibles ganancias.
+        </p>
+    </div>
+
+    <!-- Historial -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5">
+                    <h5>No tienes apuestas registradas</h5>
+                    <p class="text-muted">
+                        Explora la cartelera y realiza tu primera apuesta.
+                    </p>
+
+                    <a asp-controller="Matches"
+                       asp-action="Index"
+                       class="btn btn-primary">
+                        Ver cartelera
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Partido</th>
+                                <th>Selección</th>
+                                <th>Valor</th>
+                                <th>Cuota</th>
+                                <th>Ganancia potencial</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var bet in Model)
+                            {
+                                var pickText = bet.Pick switch
+                                {
+                                    BetPick.Home => "Local",
+                                    BetPick.Draw => "Empate",
+                                    BetPick.Away => "Visitante",
+                                    _ => bet.Pick.ToString()
+                                };
+
+                                var statusClass = bet.Status switch
+                                {
+                                    BetStatus.Pending => "bg-warning text-dark",
+                                    BetStatus.Won => "bg-success",
+                                    BetStatus.Lost => "bg-danger",
+                                    _ => "bg-secondary"
+                                };
+
+                                var statusText = bet.Status switch
+                                {
+                                    BetStatus.Pending => "Pendiente",
+                                    BetStatus.Won => "Ganada",
+                                    BetStatus.Lost => "Perdida",
+                                    _ => bet.Status.ToString()
+                                };
+
+                                <tr>
+                                    <td>
+                                        @bet.MatchDate.ToColombiaTime()
+                                        .ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+
+                                    <td>
+                                        <strong>@bet.HomeTeamName</strong>
+                                        <span class="text-muted">vs</span>
+                                        <strong>@bet.AwayTeamName</strong>
+                                    </td>
+
+                                    <td>@pickText</td>
+
+                                    <td>
+                                        @bet.Amount.ToString("N2")
+                                        <small>FC</small>
+                                    </td>
+
+                                    <td>
+                                        @bet.OddsAtPlacement.ToString("0.00")
+                                    </td>
+
+                                    <td class="fw-bold">
+                                        @bet.PotentialPayout.ToString("N2")
+                                        <small>FC</small>
+                                    </td>
+
+                                    <td>
+                                        <span class="badge @statusClass">
+                                            @statusText
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+                </div>
+            }
+
+        </div>
+    </div>
+
+    <!-- Regresar -->
+    <div class="text-center mt-4">
+        <a asp-controller="Matches"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            ← Volver a la cartelera
+        </a>
+    </div>
+
+</div>

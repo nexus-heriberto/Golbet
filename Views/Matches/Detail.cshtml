@@ -1,5 +1,8 @@
+```cshtml
 @using Golbet.Enums
 @using Golbet.Services.Helpers
+@using Golbet.Data
+@using Microsoft.AspNetCore.Identity
 @model Golbet.DTOs.MatchDetailDto
 
 @{
@@ -158,16 +161,113 @@
         </div>
     </div>
 
-    <!-- Acción -->
-    @if (Model.Status == MatchStatus.Scheduled)
+    <!-- Acción: realizar apuesta -->
+    @if (Model.Status == MatchStatus.Scheduled &&
+         Model.Date > DateTime.UtcNow)
     {
-        <div class="text-center mb-4">
-            <button type="button"
-                    class="btn btn-success"
-                    disabled>
-                Apostar (Pendiente por codear)
-            </button>
-        </div>
+        @if (User.Identity?.IsAuthenticated == true &&
+             User.IsInRole(DbSeeder.ApostadorRole))
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+
+                    <h4 class="text-center mb-3">
+                        ¡Apuesta con tus FutCoins!
+                    </h4>
+
+                    <form asp-controller="Bets"
+                          asp-action="Place"
+                          method="post">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="MatchId"
+                               value="@Model.Id" />
+
+                        <div class="mb-4">
+                            <label for="Amount" class="form-label">
+                                Valor de la apuesta
+                            </label>
+
+                            <input type="number"
+                                   id="Amount"
+                                   name="Amount"
+                                   class="form-control"
+                                   min="1"
+                                   max="9999999999"
+                                   step="1"
+                                   required
+                                   placeholder="Ingresa tus FutCoins" />
+                        </div>
+
+                        <div class="text-center mb-3">
+                            <p class="fw-semibold">
+                                Selecciona el resultado:
+                            </p>
+                        </div>
+
+                        <div class="row g-2 text-center">
+
+                            <!-- Victoria local -->
+                            <div class="col-4">
+                                <button type="submit"
+                                        name="Pick"
+                                        value="Home"
+                                        class="btn btn-outline-primary w-100">
+                                    <strong>1</strong>
+                                    <br />
+                                    <small>Local</small>
+                                    <br />
+                                    @Model.HomeOdds.ToString("0.00")
+                                </button>
+                            </div>
+
+                            <!-- Empate -->
+                            <div class="col-4">
+                                <button type="submit"
+                                        name="Pick"
+                                        value="Draw"
+                                        class="btn btn-outline-primary w-100">
+                                    <strong>X</strong>
+                                    <br />
+                                    <small>Empate</small>
+                                    <br />
+                                    @Model.DrawOdds.ToString("0.00")
+                                </button>
+                            </div>
+
+                            <!-- Victoria visitante -->
+                            <div class="col-4">
+                                <button type="submit"
+                                        name="Pick"
+                                        value="Away"
+                                        class="btn btn-outline-primary w-100">
+                                    <strong>2</strong>
+                                    <br />
+                                    <small>Visitante</small>
+                                    <br />
+                                    @Model.AwayOdds.ToString("0.00")
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        }
+        else if (User.Identity?.IsAuthenticated != true)
+        {
+            <div class="text-center mb-4">
+                <a asp-controller="Account"
+                   asp-action="Login"
+                   class="btn btn-success">
+                    Inicia sesión para apostar
+                </a>
+            </div>
+        }
     }
 
     <!-- Regresar -->
@@ -179,3 +279,4 @@
     </div>
 
 </div>
+```

@@ -1,16 +1,21 @@
 ﻿
 @using Microsoft.AspNetCore.Identity
 @using Golbet.Entities
+@using Golbet.Data
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - GolBet</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
     <style>
             body {
                 margin: 0;
@@ -91,6 +96,14 @@
                 color: #166534;
             }
 
+            .golbet-error {
+                padding: 12px 16px;
+                margin-bottom: 18px;
+                border-radius: 6px;
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
             @@media (max-width: 600px) {
                 .golbet-navbar {
                     padding: 14px;
@@ -103,25 +116,44 @@
             }
     </style>
 </head>
+
 <body>
+
     <header class="golbet-navbar">
+
         <a class="golbet-brand"
            asp-controller="Matches"
-           asp-action="Index">⚽ GolBet</a>
+           asp-action="Index">
+            ⚽ GolBet
+        </a>
 
         <nav class="golbet-links">
-            <a asp-controller="Matches" asp-action="Index">Cartelera</a>
+
+            <a asp-controller="Matches"
+               asp-action="Index">
+                Cartelera
+            </a>
 
             @if (SignInManager.IsSignedIn(User))
             {
-                @if (User.IsInRole("Admin"))
+                @if (User.IsInRole(DbSeeder.AdminRole))
                 {
-                    <a asp-controller="Matches" asp-action="Create">
+                    <a asp-controller="Matches"
+                       asp-action="Create">
                         Nuevo partido
                     </a>
 
-                    <a asp-controller="Teams" asp-action="Index">
+                    <a asp-controller="Teams"
+                       asp-action="Index">
                         Administrar equipos
+                    </a>
+                }
+
+                @if (User.IsInRole(DbSeeder.ApostadorRole))
+                {
+                    <a asp-controller="Bets"
+                       asp-action="MyBets">
+                        Mis apuestas
                     </a>
                 }
 
@@ -133,24 +165,34 @@
                       asp-action="Logout"
                       method="post"
                       style="display:inline;">
+
                     @Html.AntiForgeryToken()
-                    <button type="submit">Cerrar sesión</button>
+
+                    <button type="submit">
+                        Cerrar sesión
+                    </button>
+
                 </form>
             }
             else
             {
-                <a asp-controller="Account" asp-action="Login">
+                <a asp-controller="Account"
+                   asp-action="Login">
                     Iniciar sesión
                 </a>
 
-                <a asp-controller="Account" asp-action="Register">
+                <a asp-controller="Account"
+                   asp-action="Register">
                     Registrarse
                 </a>
             }
+
         </nav>
+
     </header>
 
     <main class="golbet-content">
+
         @if (TempData["Success"] is string successMessage)
         {
             <div class="golbet-message" role="status">
@@ -158,7 +200,15 @@
             </div>
         }
 
+        @if (TempData["Error"] is string errorMessage)
+        {
+            <div class="golbet-error" role="alert">
+                @errorMessage
+            </div>
+        }
+
         @RenderBody()
+
     </main>
 
     <footer class="golbet-footer">
@@ -169,5 +219,6 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>
