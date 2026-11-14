@@ -1,3 +1,15 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build directories
 bin/
 obj/
-*.user
+
+# Serilog logs
+Logs/
+
+# User-specific files
+*.userosscache
+*.sln.docstates
