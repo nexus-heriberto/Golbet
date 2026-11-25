@@ -1,4 +1,4 @@
-```cshtml
+
 @using Golbet.Enums
 @using Golbet.Services.Helpers
 @using Golbet.Data
@@ -95,6 +95,51 @@
             </div>
 
         </div>
+
+        <!-- Footer: contador y controles del Admin -->
+        <div class="card-footer d-flex justify-content-between align-items-center">
+
+            <small class="text-muted">
+                🎟️ @Model.TotalBets apuestas realizadas
+            </small>
+
+            @if (User.IsInRole(DbSeeder.AdminRole))
+            {
+                <div class="d-flex gap-2">
+
+                    @if (Model.Status == MatchStatus.Scheduled)
+                    {
+                        <a asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-outline-primary">
+                            Editar
+                        </a>
+
+                        <form asp-action="Start"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('¿Iniciar el partido? Las apuestas quedarán cerradas.');">
+
+                            <button type="submit"
+                                    class="btn btn-warning">
+                                Iniciar partido
+                            </button>
+                        </form>
+                    }
+                    else if (Model.Status == MatchStatus.InProgress)
+                    {
+                        <a asp-action="Close"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-danger">
+                            Cerrar partido
+                        </a>
+                    }
+
+                </div>
+            }
+
+        </div>
     </div>
 
     <!-- Cuotas -->
@@ -138,25 +183,6 @@
                 </div>
 
             </div>
-
-        </div>
-    </div>
-
-    <!-- Apuestas -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body text-center">
-
-            <h5 class="mb-2">
-                Apuestas realizadas
-            </h5>
-
-            <div class="display-6 fw-bold">
-                @Model.TotalBets
-            </div>
-
-            <p class="text-muted mb-0">
-                apuestas registradas para este partido
-            </p>
 
         </div>
     </div>
@@ -279,4 +305,3 @@
     </div>
 
 </div>
-```

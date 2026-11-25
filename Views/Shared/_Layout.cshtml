@@ -5,6 +5,15 @@
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 
+@{
+    AppUser? currentUser = null;
+
+    if (SignInManager.IsSignedIn(User))
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+    }
+}
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -17,103 +26,112 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
     <style>
-            body {
-                margin: 0;
-                background: #f4f7fb;
-                color: #1f2937;
-                font-family: Arial, Helvetica, sans-serif;
-            }
+        body {
+            margin: 0;
+            background: #f4f7fb;
+            color: #1f2937;
+            font-family: Arial, Helvetica, sans-serif;
+        }
 
+        .golbet-navbar {
+            background: #102b46;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .golbet-brand {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        .golbet-brand:hover {
+            color: #bfe5ff;
+        }
+
+        .golbet-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .golbet-links a,
+        .golbet-links button {
+            color: #ffffff;
+            text-decoration: none;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,.35);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .golbet-links a:hover,
+        .golbet-links button:hover {
+            background: #244967;
+        }
+
+        .golbet-user {
+            color: #dbeafe;
+            font-size: 14px;
+        }
+
+        .golbet-balance {
+            color: #86efac;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid rgba(134, 239, 172, .4);
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+
+        .golbet-content {
+            max-width: 1200px;
+            margin: 28px auto;
+            padding: 0 20px;
+            min-height: 65vh;
+        }
+
+        .golbet-footer {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        .golbet-message {
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            border-radius: 6px;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .golbet-error {
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            border-radius: 6px;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @@media (max-width: 600px) {
             .golbet-navbar {
-                background: #102b46;
-                padding: 14px 24px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 18px;
-                flex-wrap: wrap;
-            }
-
-            .golbet-brand {
-                color: #ffffff;
-                text-decoration: none;
-                font-size: 25px;
-                font-weight: bold;
-            }
-
-                .golbet-brand:hover {
-                    color: #bfe5ff;
-                }
-
-            .golbet-links {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-
-                .golbet-links a,
-                .golbet-links button {
-                    color: #ffffff;
-                    text-decoration: none;
-                    background: transparent;
-                    border: 1px solid rgba(255,255,255,.35);
-                    border-radius: 6px;
-                    padding: 8px 12px;
-                    font-size: 14px;
-                    cursor: pointer;
-                }
-
-                    .golbet-links a:hover,
-                    .golbet-links button:hover {
-                        background: #244967;
-                    }
-
-            .golbet-user {
-                color: #dbeafe;
-                font-size: 14px;
+                padding: 14px;
             }
 
             .golbet-content {
-                max-width: 1200px;
-                margin: 28px auto;
-                padding: 0 20px;
-                min-height: 65vh;
+                margin-top: 18px;
+                padding: 0 12px;
             }
-
-            .golbet-footer {
-                text-align: center;
-                color: #64748b;
-                padding: 20px;
-                font-size: 13px;
-            }
-
-            .golbet-message {
-                padding: 12px 16px;
-                margin-bottom: 18px;
-                border-radius: 6px;
-                background: #dcfce7;
-                color: #166534;
-            }
-
-            .golbet-error {
-                padding: 12px 16px;
-                margin-bottom: 18px;
-                border-radius: 6px;
-                background: #fee2e2;
-                color: #991b1b;
-            }
-
-            @@media (max-width: 600px) {
-                .golbet-navbar {
-                    padding: 14px;
-                }
-
-                .golbet-content {
-                    margin-top: 18px;
-                    padding: 0 12px;
-                }
-            }
+        }
     </style>
 </head>
 
@@ -160,6 +178,14 @@
                 <span class="golbet-user">
                     Hola, @(User.Identity?.Name ?? "Usuario")
                 </span>
+
+                @if (User.IsInRole(DbSeeder.ApostadorRole) &&
+                     currentUser is not null)
+                {
+                    <span class="golbet-balance">
+                        Saldo: @currentUser.Balance.ToString("N0") FutCoins
+                    </span>
+                }
 
                 <form asp-controller="Account"
                       asp-action="Logout"

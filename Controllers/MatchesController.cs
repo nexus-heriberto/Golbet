@@ -1,5 +1,8 @@
+
+using Golbet.Data;
 using Golbet.DTOs;
 using Golbet.Enums;
+using Golbet.Services.DTOs;
 using Golbet.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +23,6 @@ public class MatchesController : Controller
     }
 
     // GET: /Matches
-    // La cartelera permite buscar equipos y filtrar por estado.
     [AllowAnonymous]
     public async Task<IActionResult> Index(
         MatchStatus? status,
@@ -48,7 +50,7 @@ public class MatchesController : Controller
 
     // GET: /Matches/Create
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = DbSeeder.AdminRole)]
     public async Task<IActionResult> Create()
     {
         await LoadTeamsAsync();
@@ -58,7 +60,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Create
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = DbSeeder.AdminRole)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MatchFormDto dto)
     {
@@ -88,7 +90,7 @@ public class MatchesController : Controller
 
     // GET: /Matches/Edit/5
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = DbSeeder.AdminRole)]
     public async Task<IActionResult> Edit(int id)
     {
         var dto = await _matchService.GetForEditAsync(id);
@@ -103,7 +105,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Edit
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = DbSeeder.AdminRole)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(MatchFormDto dto)
     {
@@ -137,7 +139,7 @@ public class MatchesController : Controller
 
     // POST: /Matches/Deactivate
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = DbSeeder.AdminRole)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deactivate(int id)
     {
@@ -146,6 +148,89 @@ public class MatchesController : Controller
         TempData["Success"] = "Partido desactivado correctamente.";
 
         return RedirectToAction(nameof(Index));
+    }
+
+    // MODULE 9: POST /Matches/Start/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = DbSeeder.AdminRole)]
+    public async Task<IActionResult> Start(int id)
+    {
+        try
+        {
+            await _matchService.StartMatchAsync(id);
+
+            TempData["Success"] =
+                "¡Partido en juego! Las apuestas quedaron cerradas.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        return RedirectToAction(nameof(Detail), new { id });
+    }
+
+    // MODULE 9: GET /Matches/Close/5
+    [HttpGet]
+    [Authorize(Roles = DbSeeder.AdminRole)]
+    public async Task<IActionResult> Close(int id)
+    {
+        var match = await _matchService.GetDetailAsync(id);
+
+        if (match is null)
+            return NotFound();
+
+        ViewBag.Match = match;
+
+        return View(new MatchResultFormDto
+        {
+            MatchId = id
+        });
+    }
+
+    // MODULE 9: POST /Matches/Close
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = DbSeeder.AdminRole)]
+    public async Task<IActionResult> Close(MatchResultFormDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Match = await _matchService.GetDetailAsync(dto.MatchId);
+
+            if (ViewBag.Match is null)
+                return NotFound();
+
+            return View(dto);
+        }
+
+        try
+        {
+            var summary = await _matchService.CloseMatchAsync(dto);
+
+            TempData["Success"] =
+                $"Partido cerrado {dto.HomeGoals}-{dto.AwayGoals}. " +
+                $"{summary.ResolvedBets} apuestas resueltas: " +
+                $"{summary.WonBets} ganadas, " +
+                $"{summary.TotalPaid:N0} FutCoins pagados.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+
+        return RedirectToAction(
+            nameof(Detail),
+            new { id = dto.MatchId });
     }
 
     private async Task LoadTeamsAsync()
@@ -158,6 +243,3 @@ public class MatchesController : Controller
             .ToList();
     }
 }
-
-
-

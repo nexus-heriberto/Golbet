@@ -8,11 +8,9 @@ using Golbet.Interfaces;
 using Golbet.Mapping;
 using Golbet.Services.Implementations;
 using Golbet.Services.Interfaces;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Serilog.Events;
 
 // Locate the project root independently of the execution directory.
 static string? FindProjectRoot(string startPath)
@@ -43,11 +41,12 @@ if (projectRoot is null)
         "No se encontró el archivo Golbet.csproj.");
 }
 
-// Configure the physical folders.
+// Configure the project root and physical folders.
+Directory.SetCurrentDirectory(projectRoot);
+
 var webRoot = Path.Combine(projectRoot, "wwwroot");
 var logsDirectory = Path.Combine(projectRoot, "Logs");
 
-// Create the log directory if it does not exist.
 Directory.CreateDirectory(logsDirectory);
 
 if (!Directory.Exists(webRoot))
@@ -61,248 +60,159 @@ var culture = new CultureInfo("es-CO");
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-// Serilog: console and daily log files.
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File(
-        Path.Combine(logsDirectory, "golbet-.log"),
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 14,
-        shared: true,
-        outputTemplate:
-            "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .CreateLogger();
-
-try
-{
-    Log.Information("Starting GolBet application");
-
-    // Set the correct project and web root directories.
-    var builder = WebApplication.CreateBuilder(
-        new WebApplicationOptions
-        {
-            Args = args,
-            ContentRootPath = projectRoot,
-            WebRootPath = webRoot
-        });
-
-    // Serilog integration.
-    builder.Host.UseSerilog();
-
-    // MVC.
-    builder.Services.AddControllersWithViews();
-
-    // Swagger.
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
-    // Database.
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection")));
-
-    // ASP.NET Core Identity.
-    builder.Services
-        .AddIdentity<AppUser, IdentityRole>(options =>
-        {
-            options.Password.RequiredLength = 8;
-            options.Password.RequireDigit = true;
-            options.Password.RequireUppercase = true;
-            options.Password.RequireLowercase = true;
-            options.Password.RequireNonAlphanumeric = true;
-
-            options.User.RequireUniqueEmail = true;
-        })
-        .AddEntityFrameworkStores<AppDbContext>()
-        .AddDefaultTokenProviders();
-
-    // Login and access-denied paths.
-    builder.Services.ConfigureApplicationCookie(options =>
+// Create the application builder.
+var builder = WebApplication.CreateBuilder(
+    new WebApplicationOptions
     {
-        options.LoginPath = "/Account/Login";
-        options.AccessDeniedPath = "/Account/AccessDenied";
+        Args = args,
+        ContentRootPath = projectRoot,
+        WebRootPath = webRoot
     });
 
-    // Generic repository.
-    builder.Services.AddScoped(
-        typeof(IGenericRepository<>),
-        typeof(GenericRepository<>));
+// Serilog reads its configuration from appsettings.json.
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration));
 
-    // Match repository.
-    builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+// MVC.
+builder.Services.AddControllersWithViews();
 
-    // Bet repository.
-    builder.Services.AddScoped<IBetRepository, BetRepository>();
+// Swagger.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-    // AutoMapper.
-    builder.Services.AddAutoMapper(
-        cfg => { },
-        typeof(MappingProfile).Assembly);
+// Database.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    // Application services.
-    builder.Services.AddScoped<IMatchService, MatchService>();
-    builder.Services.AddScoped<ITeamService, TeamService>();
-    builder.Services.AddScoped<IBetService, BetService>();
-
-    var app = builder.Build();
-
-    // Initialize database, roles and administrator.
-    using (var scope = app.Services.CreateScope())
+// ASP.NET Core Identity.
+builder.Services
+    .AddIdentity<AppUser, IdentityRole>(options =>
     {
-        var services = scope.ServiceProvider;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireNonAlphanumeric = true;
 
-        var context = services.GetRequiredService<AppDbContext>();
-
-        var roleManager =
-            services.GetRequiredService<RoleManager<IdentityRole>>();
-
-        var userManager =
-            services.GetRequiredService<UserManager<AppUser>>();
-
-        await DbSeeder.SeedAsync(context, roleManager, userManager);
-    }
-
-    // Swagger.
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-    else
-    {
-        app.UseHsts();
-    }
-
-    // Friendly exception page and error logging.
-    app.UseExceptionHandler(errorApp =>
-    {
-        errorApp.Run(async context =>
-        {
-            var exceptionFeature =
-                context.Features.Get<IExceptionHandlerPathFeature>();
-
-            if (exceptionFeature?.Error is Exception exception)
-            {
-                Log.Error(
-                    exception,
-                    "Unhandled exception for request {Path}",
-                    exceptionFeature.Path);
-            }
-
-            context.Response.Clear();
-            context.Response.StatusCode = 500;
-            context.Response.ContentType = "text/html; charset=utf-8";
-
-            await context.Response.WriteAsync("""
-                <!DOCTYPE html>
-                <html lang="es">
-                <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                    <title>GolBet - Error</title>
-                </head>
-                <body style="font-family:Arial;text-align:center;margin:80px;">
-                    <h1>Algo salió mal</h1>
-                    <p>Ocurrió un error inesperado al procesar tu solicitud.</p>
-                    <p>El equipo técnico puede revisar el registro del sistema.</p>
-                    <a href="/Matches">Volver a la cartelera</a>
-                </body>
-                </html>
-                """);
-        });
-    });
-
-    // Log every HTTP request.
-    app.UseSerilogRequestLogging();
-
-    // Friendly HTTP status code pages.
-    app.UseStatusCodePages(async statusCodeContext =>
-    {
-        var response = statusCodeContext.HttpContext.Response;
-        var status = response.StatusCode;
-
-        var message = status switch
-        {
-            403 => "No tienes permisos para acceder a este recurso.",
-            404 => "La página que buscas no está disponible.",
-            _ => "No fue posible completar tu solicitud."
-        };
-
-        response.ContentType = "text/html; charset=utf-8";
-
-        var html = $"""
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>GolBet - Error {status}</title>
-            </head>
-            <body style="font-family:Arial;text-align:center;margin:80px;">
-                <h1>Error {status}</h1>
-                <p>{message}</p>
-                <a href="/Matches">Volver a la cartelera</a>
-            </body>
-            </html>
-            """;
-
-        await response.WriteAsync(html);
-    });
-
-    // HTTP request pipeline.
-    app.UseHttpsRedirection();
-
-    app.UseStaticFiles();
-
-    app.UseRouting();
-
-    app.UseAuthentication();
-
-    app.UseAuthorization();
-
-    // Main MVC route.
-    app.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Matches}/{action=Index}/{id?}");
-
-    // Existing development template endpoint.
-    var summaries = new[]
-    {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild",
-        "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
-
-    app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-            new WeatherForecast(
-                DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                Random.Shared.Next(-20, 55),
-                summaries[Random.Shared.Next(summaries.Length)]
-            ))
-            .ToArray();
-
-        return forecast;
+        options.User.RequireUniqueEmail = true;
     })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-    Log.Information("GolBet application is ready");
+// Login and access-denied paths.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
 
-    await app.RunAsync();
-}
-catch (Exception ex)
+// Generic repository.
+builder.Services.AddScoped(
+    typeof(IGenericRepository<>),
+    typeof(GenericRepository<>));
+
+// Match repository.
+builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+
+// Bet repository.
+builder.Services.AddScoped<IBetRepository, BetRepository>();
+
+// AutoMapper.
+builder.Services.AddAutoMapper(
+    cfg => { },
+    typeof(MappingProfile).Assembly);
+
+// Application services.
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IBetService, BetService>();
+
+var app = builder.Build();
+
+// Log application startup.
+app.Logger.LogInformation("Starting GolBet application");
+
+// Initialize database, roles and administrator.
+using (var scope = app.Services.CreateScope())
 {
-    Log.Fatal(ex, "GolBet application terminated unexpectedly");
-    throw;
+    var services = scope.ServiceProvider;
+
+    var context = services.GetRequiredService<AppDbContext>();
+
+    var roleManager =
+        services.GetRequiredService<RoleManager<IdentityRole>>();
+
+    var userManager =
+        services.GetRequiredService<UserManager<AppUser>>();
+
+    await DbSeeder.SeedAsync(context, roleManager, userManager);
 }
-finally
+
+// Custom exception handling in production.
+if (!app.Environment.IsDevelopment())
 {
-    Log.CloseAndFlush();
+    app.UseExceptionHandler("/Error/General");
 }
+
+// Custom HTTP status code pages.
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
+
+// Swagger.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseHsts();
+}
+
+// HTTP request pipeline.
+app.UseHttpsRedirection();
+
+app.UseStaticFiles();
+
+// Structured HTTP request logging.
+app.UseSerilogRequestLogging();
+
+app.UseRouting();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+// Main MVC route.
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Matches}/{action=Index}/{id?}");
+
+// Existing development template endpoint.
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild",
+    "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
+
+app.MapGet("/weatherforecast", () =>
+{
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast(
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+
+    return forecast;
+})
+.WithName("GetWeatherForecast")
+.WithOpenApi();
+
+app.Logger.LogInformation("GolBet application is ready");
+
+await app.RunAsync();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

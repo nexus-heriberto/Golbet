@@ -1,5 +1,7 @@
+
 using Golbet.DTOs;
 using Golbet.Enums;
+using Golbet.Services.DTOs;
 
 namespace Golbet.Services.Interfaces;
 
@@ -18,4 +20,10 @@ public interface IMatchService
     Task UpdateAsync(MatchFormDto dto);
 
     Task DeactivateAsync(int id);
+
+    // Module 9: Match lifecycle and bet resolution.
+    Task StartMatchAsync(int id);
+
+    Task<ResolutionSummaryDto> CloseMatchAsync(MatchResultFormDto dto);
 }
+
